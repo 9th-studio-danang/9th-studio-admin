@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> {# Add Chart.js CDN link #}
+
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1, h2 { color: #007bff; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 20px; }
+        .metric-card { background: #e0f7fa; padding: 15px; border-radius: 5px; margin-bottom: 15px; text-align: center; }
+        .metric-card h3 { margin-top: 0; color: #0056b3; }
+        .metric-card p { font-size: 27px; font-weight: bold; color: #007bff; margin: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .chart-container { width: 100%; margin-top: 20px; margin-bottom: 40px; }
+
+        .collapsible-header {
+            cursor: pointer;
+            padding: 0;
+            user-select: none; /* Prevent text selection */
+            display: flex; /* To align icon */
+            align-items: center;
+            color: #007bff; /* Inherit h2 styles, but allow overrides */
+        }
+
+        .collapsible-header .toggle-icon {
+            font-size: 30px;
+            transition: transform 0.3s ease-in-out;
+            margin-left: 10px; /* Space between text and icon */
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            padding-bottom: 0; /* Remove initial padding */
+        }
+
+        /* Ensure the content div has some padding when expanded if needed,
+           but max-height transition works best without padding on the content div itself.
+           Padding should be inside the content, e.g., on the table. */
+        .collapsible-content table {
+            margin-top: 1px; /* Keep existing table margin */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Page Analytics</h1>
+
+        <h2>Overview (Last 30 Days)</h2>
+        <div style="display: flex; justify-content: space-around; gap: 20px;">
+            <div class="metric-card" style="flex: 1;">
+                <h3>Total Page Views</h3>
+                <p>{{ total_pageviews }}</p>
+            </div>
+            <div class="metric-card" style="flex: 1;">
+                <h3>Total Unique Visitors</h3>
+                <p>{{ total_visitors }}</p>
+            </div>
+            <div class="metric-card" style="flex: 1;">
+                <h3>Total Bandwidth</h3>
+                <p>{{ total_bandwidth }}</p>
+            </div>
+        </div>
+
+        <h2>Pageviews Trend</h2>
+        <div class="chart-container">
+            <canvas id="pageviewsChart"></canvas>
+        </div>
+        {% if pageview_labels %}
+        <p class="collapsible-header">Page Views Data <span class="toggle-icon">-</span></p>
+        <div class="collapsible-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Pageviews</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(pageview_labels | length) %}
+                    <tr>
+                        <td>{{ pageview_labels[i] }}</td>
+                        <td>{{ pageview_data[i] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <h2>Unique Visitors Trend</h2>
+        <div class="chart-container">
+            <canvas id="visitorsChart"></canvas>
+        </div>
+        {% if visitor_labels %}
+        <p class="collapsible-header">Unique Visitors Data <span class="toggle-icon">-</span></p>
+        <div class="collapsible-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Unique Visitors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(visitor_labels | length) %}
+                    <tr>
+                        <td>{{ visitor_labels[i] }}</td>
+                        <td>{{ visitor_data[i] }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <h2>Top Countries</h2>
+        {% if top_countries %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Country</th>
+                    <th>Pageviews</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for country in top_countries %}
+                <tr>
+                    <td>{{ country.country_name }}</td>
+                    <td>{{ country.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No top countries data available or an error occurred.</p>
+        {% endif %}
+
+        {% if top_pages %}
+        <h2>Top Pages</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Path</th>
+                    <th>Pageviews</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for page in top_pages %}
+                <tr>
+                    <td>{{ page.path }}</td>
+                    <td>{{ page.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if top_sources %}
+        <h2>Top Sources</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Source URL</th>
+                    <th>Pageviews</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for source in top_sources %}
+                <tr>
+                    <td>{{ source.path }}</td>
+                    <td>{{ source.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if not_found %}
+        <h2>Resources Not Found (404s)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Path</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in not_found %}
+                <tr>
+                    <td>{{ item.path }}</td>
+                    <td>{{ item.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <h2>Raw Data</h2>
+        <pre>{{ raw_data | tojson(indent=2) }}</pre>
+    </div>
+
+    <script>
+        // Get data from Flask, safely converting to JSON
+        const pageviewLabels = {{ pageview_labels | tojson }};
+        const pageviewData = {{ pageview_data | tojson }};
+        const visitorLabels = {{ visitor_labels | tojson }};
+        const visitorData = {{ visitor_data | tojson }};
+
+        // --- Pageviews Chart ---
+        const pageviewsCtx = document.getElementById('pageviewsChart').getContext('2d');
+        new Chart(pageviewsCtx, {
+            type: 'line',
+            data: {
+                labels: pageviewLabels,
+                datasets: [{
+                    label: 'Daily Pageviews',
+                    data: pageviewData,
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Daily Pageviews Trend'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Pageviews'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                }
+            }
+        });
+
+        // --- Unique Visitors Chart ---
+        const visitorsCtx = document.getElementById('visitorsChart').getContext('2d');
+        new Chart(visitorsCtx, {
+            type: 'line',
+            data: {
+                labels: visitorLabels,
+                datasets: [{
+                    label: 'Daily Unique Visitors',
+                    data: visitorData,
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Daily Unique Visitors Trend'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Unique Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                }
+            }
+        });
+
+        const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+
+        // This ensures content is fully expanded by default and transition works on first collapse
+        window.addEventListener('load', () => {
+            collapsibleHeaders.forEach(header => {
+                const content = header.nextElementSibling;
+                // Set max-height to scrollHeight to ensure it's fully visible and can collapse smoothly
+                content.style.maxHeight = content.scrollHeight + "px";
+            });
+        });
+
+        collapsibleHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                const toggleIcon = this.querySelector('.toggle-icon');
+
+                if (content.classList.contains('collapsed')) {
+                    // It's currently collapsed, so expand it
+                    content.classList.remove('collapsed');
+                    content.style.maxHeight = content.scrollHeight + "px"; // Expand to full height
+                    toggleIcon.textContent = '-';
+                } else {
+                    // It's currently expanded, so collapse it
+                    // First, set the max-height to its current scrollHeight to enable the transition
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    // Then, use requestAnimationFrame to ensure the browser registers the height before collapsing
+                    requestAnimationFrame(() => {
+                        content.style.maxHeight = '0';
+                    });
+                    content.classList.add('collapsed');
+                    toggleIcon.textContent = '+';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
